@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "SWE coaches challenge",
   "source": "src/index.html",
+  "targets": {
+    "default": {
+      "distDir": "./docs"
+    }
+  },
   "scripts": {
     "start": "parcel",
     "build": "parcel build src/index.html"

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "parcel",
-    "build": "parcel build src/index.html"
+    "build": "parcel build src/index.html --public-url /sokoban"
   },
   "author": "bmordan",
   "license": "ISC",

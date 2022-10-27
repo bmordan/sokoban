@@ -1,0 +1,19 @@
+{
+  "name": "sokoban",
+  "version": "0.1.0",
+  "description": "SWE coaches challenge",
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build src/index.html"
+  },
+  "author": "bmordan",
+  "license": "ISC",
+  "devDependencies": {
+    "parcel": "^2.7.0",
+    "parcel-reporter-static-files-copy": "^1.4.0"
+  },
+  "dependencies": {
+    "phaser": "^3.55.2"
+  }
+}

@@ -5,7 +5,8 @@
   "source": "src/index.html",
   "targets": {
     "default": {
-      "distDir": "./docs"
+      "distDir": "./docs",
+      "publicUrl": "https://bmordan.github.io/sokoban"
     }
   },
   "scripts": {

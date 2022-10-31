@@ -2,4 +2,4 @@
 
 [Create Spritesheets](https://www.leshylabs.com/apps/sstool/)
 
-[Play the Game]()
+[Play the Game](https://bmordan.github.io/sokoban/)

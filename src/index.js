@@ -3,35 +3,26 @@ const getBodAnimations = require('./bod_animations')
 
 function preload() {
     this.load.atlasXML('bod', 'sprites.png', 'sprites.xml')
+    this.load.image('spritesheet', 'sprites.png')
+    this.load.tilemapTiledJSON('map', 'map.json')
 }
 
 function create() {
     this.bod = this.physics.add.sprite(100, 100, 'bod')
     this.bod.setCollideWorldBounds(true)
     this.bod.setDepth(1)
-    this.cursors = this.input.keyboard.createCursorKeys()
-    // character animations
     const bodAnimations = getBodAnimations(this)
     bodAnimations.forEach(animation => this.anims.create(animation))
     // staticTileSet
-    const level = [
-        [1, 1, 1, 1, 1, 1, 1, 1],
-        [1,31,31,31,31,31,31, 1],
-        [1,31,31,31,31,31,31, 1],
-        [1, 1, 1, 1,31,31,31, 1],
-        [1,31,31,31,31,31,31, 1],
-        [1,31,31,31,31,31,31, 1],
-        [1,31,31,31,31,31,31, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1]        
-    ]
-    const tileMap = this.make.tilemap({
-        data: level,
-        tileWidth: 64,
-        tileHeight: 64
-    })
+    this.cursors = this.input.keyboard.createCursorKeys()
+    
+    const map = this.make.tilemap({key: 'map', tileWidth: 64, tileHeight: 64})
+    const tileset = map.addTilesetImage('tileset', 'spritesheet')
+    const groundLayer = map.createLayer('ground', tileset, 0, 0)
+    const wallLayer = map.createLayer('walls', tileset, 0, 0)
 
-    const tiles = tileMap.addTilesetImage('bod')
-    const layer = tileMap.createStaticLayer(0, tiles, 0, 0)
+    this.physics.add.collider(this.bod, wallLayer)
+    wallLayer.setCollisionBetween(2,2)
 }
 
 function update() {
@@ -59,8 +50,8 @@ function update() {
 
 new Phaser.Game({
     type: Phaser.AUTO,
-    width: 8 * 64,
-    height: 8 * 64,
+    width: 16 * 64,
+    height: 16 * 64,
     backgroundColor: '#FFF',
     physics: {
         default: 'arcade',

@@ -1,11 +1,15 @@
 const Phase = require('phaser')
 const getBodAnimations = require('./bod_animations')
 
+const targetsPlaced = []
+const completedMessage = []
+
 function preload() {
     this.load.atlasXML('bod', 'sprites.png', 'sprites.xml')
     this.load.image('spritesheet', 'sprites.png')
     this.load.tilemapTiledJSON('map', 'map.json')
     this.load.image('crate', 'Crate_Brown.png')
+    this.load.image('placedCrate', 'Crate_Yellow.png')
 }
 
 function create() {
@@ -22,6 +26,7 @@ function create() {
     bodAnimations.forEach(animation => this.anims.create(animation))    
 
     const tileset = map.addTilesetImage('tileset', 'spritesheet')
+    
     map.createLayer('ground', tileset, 0, 0)
     
     const wallLayer = map.createLayer('walls', tileset, 0, 0)
@@ -29,16 +34,60 @@ function create() {
     wallLayer.setCollisionBetween(25,25)
 
     const crates = map.createFromObjects('crates', {gid: 29})
-    crates.forEach(crate => {
-        const crateSprite = this.physics.add.sprite(crate.x, crate.y, 'crate')
-        this.physics.add.collider(this.bod, crateSprite)
-        this.physics.add.collider(crateSprite, wallLayer)
-        crateSprite
-            .setPushable(true)
-            .setCollideWorldBounds(true)
-            .setDrag(2000, 2000)
-    })
+        .map((crate, i) => {
+            this.physics.world.enable(crate)
+            const crateSprite = this.physics.add.sprite(crate.x, crate.y, 'crate')
+            
+            return crateSprite
+                .setDepth(1)
+                .setPushable(true)
+                .setCollideWorldBounds(true)
+                .setDrag(2000, 2000)
+                .setName(`crate_${i+1}`)
+        })
     
+    crates.forEach(crate => {
+        this.physics.add.collider(this.bod,  crate, null, null, this)
+        this.physics.add.collider(wallLayer, crate, null, null, this)
+        this.physics.add.collider(crates,    crate, null, null, this)
+    })
+
+    map.createLayer('targets', tileset, 0, 0)
+    map.createFromObjects('targets', {gid: 28})
+        .map(target => {
+            this.physics.world.enable(target)
+            this.physics.add.overlap(target, crates, onTargetHit.bind(this))
+        })
+    
+}
+
+function onTargetHit(target, crate) {
+    const touching = [
+        crate.body.touching.up,
+        crate.body.touching.down,
+        crate.body.touching.left,
+        crate.body.touching.right
+    ].some(contacts => contacts)
+    
+    const nextTarget = `target_${targetsPlaced.length + 1}`
+
+    if (touching && target.name === nextTarget) {
+        const placed = targetsPlaced.find(_crate => _crate.name === crate.name)
+        
+        if(!placed) {
+            this.tweens.add({
+                targets: crate,
+                x: target.x,
+                y: target.y,
+                duration: 300,
+                ease: 'Power2',
+                delay: 200
+            })
+            crate.setPushable(false)
+            crate.setTexture('placedCrate')
+            targetsPlaced.push(crate)
+        }
+    }
 }
 
 function update() {
@@ -61,6 +110,13 @@ function update() {
     } else {
         this.bod.setVelocityX(0)
         this.bod.setVelocityY(0)
+    }
+    if (!completedMessage.length) {
+        this.add.text(1 * 64, 3 * 64, "LEVEL COMPLETE!", { 
+            align: 'center',
+            fontSize: '44px',
+            color: 'rgba(221, 190, 67, 1)'
+        })
     }
 }
 

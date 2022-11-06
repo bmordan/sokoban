@@ -1,8 +1,13 @@
+const { Game } = require('phaser')
 const Phase = require('phaser')
 const getBodAnimations = require('./bod_animations')
 
 const targetsPlaced = []
 const completedMessage = []
+let isPushing = false
+let isScrapePlaying = false
+let scrape;
+let crates;
 
 function preload() {
     this.load.atlasXML('bod', 'sprites.png', 'sprites.xml')
@@ -10,13 +15,20 @@ function preload() {
     this.load.tilemapTiledJSON('map', 'map.json')
     this.load.image('crate', 'Crate_Brown.png')
     this.load.image('placedCrate', 'Crate_Yellow.png')
+    this.load.audio('sokoworking', ['sokoban.ogg', 'sokodan.mp3'])
+    this.load.audio('scrape', ['scrape.ogg', 'scrape.mp3'])
+    this.load.audio('fit', ['fit.ogg', 'fit.mp3'])
 }
 
 function create() {
     const map = this.make.tilemap({key: 'map', tileWidth: 64, tileHeight: 64})
     
     this.cursors = this.input.keyboard.createCursorKeys()
-
+    
+    this.sokoworking = this.sound.add('sokoworking', {volume: 0.35, loop: true})
+    scrape = this.sound.add('scrape', {loop: true})
+    const fit = this.sound.add('fit', {volume: 0.15})
+    
     const spawnpoint = map.findObject('spawn', obj => obj.name === 'spawn')
 
     this.bod = this.physics.add.sprite(spawnpoint.x, spawnpoint.y, 'bod')
@@ -31,9 +43,9 @@ function create() {
     
     const wallLayer = map.createLayer('walls', tileset, 0, 0)
     this.physics.add.collider(this.bod, wallLayer)
-    wallLayer.setCollisionBetween(25,25)
+    wallLayer.setCollisionBetween(31,31)
 
-    const crates = map.createFromObjects('crates', {gid: 29})
+    crates = map.createFromObjects('crates', {gid: 28})
         .map((crate, i) => {
             this.physics.world.enable(crate)
             const crateSprite = this.physics.add.sprite(crate.x, crate.y, 'crate')
@@ -53,15 +65,16 @@ function create() {
     })
 
     map.createLayer('targets', tileset, 0, 0)
-    map.createFromObjects('targets', {gid: 28})
+    map.createFromObjects('targets', {gid: 34})
         .map(target => {
             this.physics.world.enable(target)
-            this.physics.add.overlap(target, crates, onTargetHit.bind(this))
+            this.physics.add.overlap(target, crates, onTargetHit.bind(this, fit))
         })
     
+    this.sokoworking.play()
 }
 
-function onTargetHit(target, crate) {
+function onTargetHit(fit, target, crate) {
     const touching = [
         crate.body.touching.up,
         crate.body.touching.down,
@@ -85,12 +98,17 @@ function onTargetHit(target, crate) {
             })
             crate.setPushable(false)
             crate.setTexture('placedCrate')
+            fit.play()
             targetsPlaced.push(crate)
         }
     }
 }
 
 function update() {
+    if(this.cursors.left.isDown || this.cursors.right.isDown) {
+        this.sound.context.resume() 
+    }
+
     if(this.cursors.left.isDown) {
         this.bod.play('left', true)
         this.bod.setVelocityX(-290)
@@ -111,19 +129,38 @@ function update() {
         this.bod.setVelocityX(0)
         this.bod.setVelocityY(0)
     }
-    if (!completedMessage.length) {
-        this.add.text(1 * 64, 3 * 64, "LEVEL COMPLETE!", { 
+
+    isPushing = crates.some(crate => {
+        return !(Math.abs(crate.body.velocity.x) < 1 && Math.abs(crate.body.velocity.y) < 1)
+    })
+
+    if (isPushing && !isScrapePlaying) {
+        scrape.play()
+        isScrapePlaying = true
+    } else if (isScrapePlaying && !isPushing) {
+        isScrapePlaying = false
+        scrape.stop()
+    }
+    
+    if (targetsPlaced.length === 3 && !completedMessage.length) {
+        this.add.text(2 * 64, 5 * 64, "LEVEL COMPLETE!", { 
             align: 'center',
             fontSize: '44px',
-            color: 'rgba(221, 190, 67, 1)'
+            color: 'rgb(67, 140, 187)'
+        })
+        this.tweens.add({
+            targets: this.sokoworking,
+            volume: 0,
+            duration: 2000
         })
     }
+
 }
 
 new Phaser.Game({
     type: Phaser.AUTO,
-    width: 8 * 64,
-    height: 8 * 64,
+    width: 12 * 64,
+    height: 12 * 64,
     backgroundColor: '#FFF',
     physics: {
         default: 'arcade',
